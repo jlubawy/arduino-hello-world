@@ -3,15 +3,9 @@
 # Josh Lubawy <jlubawy@gmail.com>
 ################################################################################
 
-ifeq ($(OS),Windows_NT)
-RM = DEL /Q
-RMDIR = RMDIR
-MKDIR = if not exist $(dir $@) MKDIR $(dir $@)
-else
 RM = rm -rf
 RMDIR =
 MKDIR = mkdir -p $@
-endif
 
 MMCU ?= atmega328p
 COM_PORT ?= COM10
@@ -94,7 +88,6 @@ all: $(DIRS) $(APP_TARGETS)
 
 clean:
 	$(RM) $(DIRS)
-	$(RMDIR) $(DIRS)
 
 install: all $(APP_TARGET_HEX)
 	$(AVR_DUDE) -C$(AVR_ETC_DIR)/avrdude.conf -v -p$(MMCU) -carduino -P$(COM_PORT) -b115200 -D -Uflash:w:$(APP_TARGET_HEX):i
@@ -107,56 +100,46 @@ $(DIRS):
 # Libraries
 $(SS_TARGET): $(SS_CPP_OBJS)
 	$(info $@)
-	@$(MKDIR)
 	$(LIB_RECIPE)
 
 $(CORE_TARGET): $(CORE_C_OBJS) $(CORE_CPP_OBJS)
 	$(info $@)
-	@$(MKDIR)
 	$(LIB_RECIPE)
 
 # Object Files
 $(OBJ_DIR)/%.cpp.o: $(SS_DIR)/%.a
 	$(info $@)
-	@$(MKDIR)
 	$(CPP_RECIPE) -w
 
 $(OBJ_DIR)/%.cpp.o: $(SS_DIR)/%.cpp
 	$(info $@)
-	@$(MKDIR)
 	$(CPP_RECIPE) -w
 
 $(OBJ_DIR)/%.c.o: $(CORE_DIR)/%.c
 	$(info $@)
-	@$(MKDIR)
 	$(C_RECIPE)
 
 $(OBJ_DIR)/%.cpp.o: $(CORE_DIR)/%.cpp
 	$(info $@)
-	@$(MKDIR)
 	$(CPP_RECIPE)
 
 $(OBJ_DIR)/%.c.o: $(APP_DIR)/%.c
 	$(info $@)
-	@$(MKDIR)
 	$(C_RECIPE)
 
 $(OBJ_DIR)/%.cpp.o: $(APP_DIR)/%.cpp
 	$(info $@)
-	@$(MKDIR)
 	$(CPP_RECIPE)
 
 # Output Files
 $(APP_TARGET_ELF): $(LIB_TARGETS)
 $(APP_TARGET_ELF): $(APP_C_OBJS) $(APP_CPP_OBJS)
 	$(info $@)
-	@$(MKDIR)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -L$(LIB_DIR) $(LIBS) -o $@ $^
 	@$(AVR_SIZE) --mcu=$(MMCU) -C $@
 	@$(AVR_SIZE) --mcu=$(MMCU) -C $@ > $(BIN_DIR)/memory_usage.txt
 	@$(AVR_OBJDUMP) --disassemble --syms $@ > $@.lst
 $(APP_TARGET_EEP) $(APP_TARGET_HEX): $(APP_TARGET_ELF)
 	$(info $@)
-	@$(MKDIR)
 	@$(AVR_OBJCOPY) -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 $< $@
 	@$(AVR_OBJCOPY) -O ihex -R .eeprom $< $@
